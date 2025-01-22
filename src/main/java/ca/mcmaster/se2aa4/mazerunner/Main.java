@@ -1,20 +1,53 @@
 package ca.mcmaster.se2aa4.mazerunner;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileReader;
+
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
 
 public class Main {
 
     private static final Logger logger = LogManager.getLogger();
 
     public static void main(String[] args) {
-        System.out.println("** Starting Maze Runner");
+        logger.info("** Starting Maze Runner");
+
+        //Add option to read -i flag as argument 
+        Options options = new Options();
+        options.addOption("i", "input", true, "Input file that contains the maze");
+
+        //Create CL Parser, formatter objects to parse arguments
+        CommandLineParser parser = new DefaultParser();
+        HelpFormatter formatter = new HelpFormatter();
+        CommandLine cmd; //initialize variable to store parsed argument 
+
+
         try {
-            System.out.println("**** Reading the maze from file " + args[0]);
-            BufferedReader reader = new BufferedReader(new FileReader(args[0]));
+
+            //Parse command line argument and option
+            cmd = parser.parse(options, args);
+
+            //If there is no input file given with the -i flag, throw error
+            if (!cmd.hasOption("i")) {
+                logger.error("/!\\ Missing required option: -i <input file> /!\\");
+                formatter.printHelp("MazeRunner", options);
+                return;
+
+            }
+
+            //Get file path from -i flag input argument
+            String inputFilePath = cmd.getOptionValue("i");
+            //Read file
+            logger.info("**** Reading the maze from file " + inputFilePath);
+            BufferedReader reader = new BufferedReader(new FileReader(inputFilePath));
             String line;
             while ((line = reader.readLine()) != null) {
                 for (int idx = 0; idx < line.length(); idx++) {
@@ -26,11 +59,20 @@ public class Main {
                 }
                 System.out.print(System.lineSeparator());
             }
+
+            reader.close();
+
+        } catch (ParseException e) {
+            //Handle parsing errors
+            logger.error("/!\\ Error parsing command line arguments: " + e.getMessage() + " /!\\");
+            formatter.printHelp("MazeRunner", options);
         } catch(Exception e) {
-            System.err.println("/!\\ An error has occured /!\\");
+            //Handle all other errors
+            logger.error("An unexpected error occurred: {}", e.getMessage(), e);
+
         }
-        System.out.println("**** Computing path");
-        System.out.println("PATH NOT COMPUTED");
-        System.out.println("** End of MazeRunner");
+        logger.info("**** Computing path");
+        logger.error("PATH NOT COMPUTED"); 
+        logger.info("** End of MazeRunner");
     }
 }
