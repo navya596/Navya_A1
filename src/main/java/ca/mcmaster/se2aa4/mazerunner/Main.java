@@ -62,7 +62,7 @@ public class Main {
 
             int[] exit = maze.getExit();
             System.out.println("Exit Point: (" + exit[0] + ", " + exit[1] + ")");
-            
+
             //Read file
             /*logger.info("**** Reading the maze from file " + inputFilePath);
             BufferedReader reader = new BufferedReader(new FileReader(inputFilePath));
@@ -178,6 +178,7 @@ class Maze {
                 exit[1] = 0;
                 break;
             }
+            
         }
         return exit;
     }
