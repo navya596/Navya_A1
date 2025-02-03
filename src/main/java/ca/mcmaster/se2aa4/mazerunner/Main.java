@@ -73,32 +73,19 @@ public class Main {
             for (char[] row : mazeArray) {
                 System.out.println(new String(row));
             }
+            //Initialize person and path
             Person runner = new Person(mazeArray, initialFace, entry, entry, exit);
-
+            Path path = new Path(runner);
             // Display initial state of the runner
             System.out.println("Initial Runner State: " + runner);
-
             // Simulate maze traversal
             System.out.println("\n--- Simulating Maze Traversal ---");
+            path.recordPath();
+            System.out.println("Canonical Path: " + path.showPath());
+            System.out.println("Factorized Path: " + path.factorizedPath(path.showPath()));
 
-            
 
-            //Read file
-            /*logger.info("**** Reading the maze from file " + inputFilePath);
-            BufferedReader reader = new BufferedReader(new FileReader(inputFilePath));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                for (int idx = 0; idx < line.length(); idx++) {
-                    if (line.charAt(idx) == '#') {
-                        System.out.print("WALL ");
-                    } else if (line.charAt(idx) == ' ') {
-                        System.out.print("PASS ");
-                    }
-                }
-                System.out.print(System.lineSeparator());
-            }
 
-            reader.close();*/
 
         } catch (ParseException e) {
             //Handle parsing errors
@@ -235,8 +222,11 @@ class Maze {
 class Person {
     //Attributes for person
     private char currentFace;
+    @SuppressWarnings("FieldMayBeFinal")
     private int[] currentPosition;
+    @SuppressWarnings("FieldMayBeFinal")
     private char[] surroundings = new char[4];
+    @SuppressWarnings("FieldMayBeFinal")
     private char[][] maze;
     private char east;
     private char west;
@@ -244,7 +234,6 @@ class Person {
     private char south;
     private final int[] start;
     private final int[] end;
-    private boolean win = false;
 
     //Constructor
     public Person(char[][] maze, char currentFace, int[] currentPosition, int[] start, int[] end) {
@@ -414,14 +403,14 @@ class Person {
 
     }
 
+    
+
 
 }
 
 class Path {
     private Person person;
     private StringBuilder factorizedPath;
-    private char flag;
-    private Boolean isLost;
     private StringBuilder path = new StringBuilder();
     private char right;
     private char left;
@@ -429,19 +418,19 @@ class Path {
     private char back;
 
 
-    public Path(Person person, char flag) {
+    public Path(Person person) {
         this.person = person;
-        this.flag = flag;
-        this.isLost = false;
         
     }
 
-    /* Public method: makeDecision()
-    Description: Makes a movement decision for the runner based on its surroundings
+    /* Public method: updateRelativeDirections()
+    Description: Updates relative right, left, front, back directions based on current facing 
     Returns: void */
-    public void makeDecision() {
+    public void updateRelativeDirections() {
         person.checkSurroundings();
         char[] surroundings = person.getSurroundings();
+        char[][] maze = person.getMaze();
+
         //use switch case to identify what direction is right, left, front, back based on the respective facing side
         switch(person.getCurrentFace()) {
             case 'E':
@@ -469,8 +458,16 @@ class Path {
                 back = surroundings[2];
                 break;
         }
+    }
 
-        //Check for the element on the right 
+    /* Public method: makeDecision()
+    Description: Makes a movement decision for the runner based on its surroundings
+    Returns: void */
+    public void makeDecision() {
+
+        //Check for element on front 
+        //Check for the element on the right
+        updateRelativeDirections();
         if (right == '#') { //If it's a wall
             //Turn left if there is also a wall in the front
             if (front == '#') {
@@ -485,11 +482,26 @@ class Path {
                 path.append("F");
                 System.out.println("Moving forward");
             }
-        } else { //If element on right is not a wall
+        } else { //If element on right is not a wall 
+            
             person.turnRight(); //Turn right
+            System.out.println("Turning Right");
             //Add to path
             path.append("R");
-            System.out.println("Turning Right");
+            System.out.println("Current Position: " + Arrays.toString(person.getCurrentPosition()));
+            System.out.println("Current Face: " + person.getCurrentFace());
+            updateRelativeDirections();
+
+            if (front != '#') {
+                //Move forward
+                person.moveForward();
+                //Add to path
+                path.append("F");
+                System.out.println("Moving forward");
+                System.out.println("Current Position: " + Arrays.toString(person.getCurrentPosition()));
+                System.out.println("Current Face: " + person.getCurrentFace());
+            }
+            
         }
 
 
@@ -513,7 +525,7 @@ class Path {
     Description:Loops decisions to record path for given maze until end point is reached
     Returns: void */
     public void recordPath() {
-        while (checkWin() == false) {
+        while(!checkWin()) {
             makeDecision();
             System.out.println("Current Position: " + Arrays.toString(person.getCurrentPosition()));
             System.out.println("Current Face: " + person.getCurrentFace());
@@ -564,7 +576,7 @@ class Path {
     Parameters: StringBuilder (path given (cound be from -i or -p flag))
     Description: generates factorized expresson for path
     Returns: void */
-    public String factorizedPath(StringBuilder givenPath) {
+    public String factorizedPath(String givenPath) {
         char currentLetter = givenPath.charAt(0); //first index of path string
         int count = 1;
         //Account for only 1 letter in path
@@ -582,21 +594,18 @@ class Path {
                 currentLetter = givenPath.charAt(i); //set currentLetter to current index character
             }
         }
-        //NOT DONE
-        //Account for last letters and only 2 move strings 
-        //Check if last letter matches current letter
-        if (givenPath.charAt(givenPath.length()-1) == currentLetter) { //Check if letter is new and doesn't match currentLetter
-            //Check if factorized path last move matches last letter
-            if (factorizedPath.length() != 2 && factorizedPath.charAt(factorizedPath.length()-2) != currentLetter) {
-                factorizedPath.append(currentLetter + count);
-            } else if (factorizedPath.length() == 2 ) {
-
-            }
-        //increase count if a consecutive index matches currentLetter
-        } else if (factorizedPath.charAt(factorizedPath.length()-2) == currentLetter) {
-            count++;
-            factorizedPath.setCharAt(factorizedPath.length() -1, (char)(count + '0'));
+        //Account for last letter
+        //Check if factorized path last move doesn't matches last letter
+        if (factorizedPath.charAt(factorizedPath.length()-2) != currentLetter) {
+            factorizedPath.append(currentLetter + count);
         }
+        else {// if letter matches currentLetter
+            //increment count of last letter at the last index of the factorized path
+            factorizedPath.setCharAt(factorizedPath.length() -1, (char)(count++ + '0')) ;
+            
+        }
+        
+
         return factorizedPath.toString();
 
     }
