@@ -64,25 +64,25 @@ public class Main {
             char[][] mazeArray = maze.getMazeArray();
 
             // Display the maze
-            System.out.println("Maze Loaded:");
+            logger.info("Maze Loaded:");
             for (char[] row : mazeArray) {
-                System.out.println(new String(row));
+                logger.info(new String(row));
             }
 
             // Get entry and exit points
             int[] entry = maze.getEntry();
             int[] exit = maze.getExit();
-            System.out.println("Entry Point: (" + entry[0] + ", " + entry[1] + ")");
-            System.out.println("Exit Point: (" + exit[0] + ", " + exit[1] + ")");
+            logger.info("Entry Point: (" + entry[0] + ", " + entry[1] + ")");
+            logger.info("Exit Point: (" + exit[0] + ", " + exit[1] + ")");
 
             
             // Initialize runner at entry point
             char initialFace = maze.getInitialFace();
             maze.initializeFace(); // Set the runner at the entry
             // Display the maze
-            System.out.println("Maze Loaded:");
+            logger.info("Maze Loaded:");
             for (char[] row : mazeArray) {
-                System.out.println(new String(row));
+                logger.info(new String(row));
             }
             //Initialize person and path
             Person runner = new Person(mazeArray, initialFace, entry, entry, exit);
@@ -99,7 +99,7 @@ public class Main {
             }
             else {
                 // Simulate maze traversal
-                System.out.println("\n--- Simulating Maze Traversal ---");
+                logger.info("\n--- Simulating Maze Traversal ---");
                 path.recordPath();
                 System.out.println("Canonical Path: " + path.showPath());
                 System.out.println("Factorized Path: " + path.factorizedPath(path.showPath()));
@@ -116,15 +116,14 @@ public class Main {
             logger.error("An unexpected error occurred: {}", e.getMessage(), e);
 
         }
-        logger.info("**** Computing path");
-        logger.error("PATH NOT COMPUTED"); 
-        logger.info("** End of MazeRunner");
+
     }
 }
 
 
 //Class to initialize maze and get exit, entry points
 class Maze {
+    private static final Logger logger = LogManager.getLogger();
     //Define maze attributes 
     private int rows;
     private int cols;
@@ -172,7 +171,7 @@ class Maze {
 
                     
                 }
-                System.out.print(System.lineSeparator());
+                logger.info(System.lineSeparator());
                 r+=1;
             }
 
@@ -181,7 +180,7 @@ class Maze {
             return mazeArray;
             
         } catch (Exception e) {
-            System.out.println("Unexpected error occured: " + e);
+            logger.info("Unexpected error occured: " + e);
         }
 
         return null;
@@ -240,6 +239,7 @@ class Maze {
 
 //Class for runner to traverse through the maze
 class Person {
+    private static final Logger logger = LogManager.getLogger();
     //Attributes for person
     private char currentFace;
     @SuppressWarnings("FieldMayBeFinal")
@@ -429,6 +429,7 @@ class Person {
 }
 
 class Path {
+    private static final Logger logger = LogManager.getLogger();
     private Person person;
     private StringBuilder factorizedPath =  new StringBuilder();
     private StringBuilder path = new StringBuilder();
@@ -494,22 +495,22 @@ class Path {
                 person.turnLeft(); 
                 //Add to path
                 path.append("L");
-                System.out.println("Turning Left");
+                logger.info("Turning Left");
             }
             else { //Move forward if there is no wall in the front
                 person.moveForward();
                 //Add to path
                 path.append("F");
-                System.out.println("Moving forward");
+                logger.info("Moving forward");
             }
         } else { //If element on right is not a wall 
             
             person.turnRight(); //Turn right
-            System.out.println("Turning Right");
+            logger.info("Turning Right");
             //Add to path
             path.append("R");
-            System.out.println("Current Position: " + Arrays.toString(person.getCurrentPosition()));
-            System.out.println("Current Face: " + person.getCurrentFace());
+            logger.info("Current Position: " + Arrays.toString(person.getCurrentPosition()));
+            logger.info("Current Face: " + person.getCurrentFace());
             updateRelativeDirections();
 
             if (front != '#') {
@@ -517,9 +518,9 @@ class Path {
                 person.moveForward();
                 //Add to path
                 path.append("F");
-                System.out.println("Moving forward");
-                System.out.println("Current Position: " + Arrays.toString(person.getCurrentPosition()));
-                System.out.println("Current Face: " + person.getCurrentFace());
+                logger.info("Moving forward");
+                logger.info("Current Position: " + Arrays.toString(person.getCurrentPosition()));
+                logger.info("Current Face: " + person.getCurrentFace());
             }
             
         }
@@ -533,7 +534,7 @@ class Path {
     Returns: void */
     public boolean checkWin() {
         if (person.getCurrentPosition()[0] == person.getEnd()[0] && person.getCurrentPosition()[1] == person.getEnd()[1]) {
-            System.out.println("YAY you won!!");
+            logger.info("YAY you won!!");
             return true;
         }
         else {
@@ -547,10 +548,10 @@ class Path {
     public void recordPath() {
         while(!checkWin()) {
             makeDecision();
-            System.out.println("Current Position: " + Arrays.toString(person.getCurrentPosition()));
-            System.out.println("Current Face: " + person.getCurrentFace());
+            logger.info("Current Position: " + Arrays.toString(person.getCurrentPosition()));
+            logger.info("Current Face: " + person.getCurrentFace());
         }
-        System.out.println("Done recording path!");
+        logger.info("Done recording path!");
     }
 
     /* Public method: showPath()
@@ -592,7 +593,7 @@ class Path {
                     i++;
                 }
             } else if (currentChar == 'F' || currentChar == 'R' || currentChar == 'L') { ////Process single letters normally if there is no number
-                System.out.println("moving: " + currentChar);
+                logger.info("moving: " + currentChar);
                 executeMove(currentChar);
             } 
             
@@ -616,14 +617,14 @@ class Path {
                 break;
             case 'F':
                 if (surroundings[0] == '#') {  // Wall in front
-                    System.out.println("Error: wall found in path");
+                    logger.error("Error: wall found in path");
                     System.exit(0);
                 } else {
                     person.moveForward();
                 }
                 break;
             default:
-                System.out.println("Invalid move: " + move);
+                logger.error("Invalid move: " + move);
                 System.exit(0);
         }
     }
