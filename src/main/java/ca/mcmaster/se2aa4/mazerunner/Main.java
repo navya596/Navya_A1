@@ -25,11 +25,14 @@ public class Main {
         //Add option to read -i flag as argument 
         Options options = new Options();
         options.addOption("i", "input", true, "Input file that contains the maze");
-
+        options.addOption("p", "path", true, "Given path that needs to be validated");
         //Create CL Parser, formatter objects to parse arguments
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
         CommandLine cmd; //initialize variable to store parsed argument 
+        char flag;
+        String pathSequence = "";
+        boolean checkPathWin = false;
 
 
         try {
@@ -42,6 +45,14 @@ public class Main {
                 logger.error("/!\\ Missing required option: -i <input file> /!\\");
                 formatter.printHelp("MazeRunner", options);
                 return;
+            } else { //Else if there is a -p flag, set flag variable to p
+                if (cmd.hasOption("p")) {
+                    pathSequence = cmd.getOptionValue("p");
+                    flag = 'p';    
+                }
+                else {
+                    flag = 'i';
+                }
 
             }
 
@@ -76,14 +87,23 @@ public class Main {
             //Initialize person and path
             Person runner = new Person(mazeArray, initialFace, entry, entry, exit);
             Path path = new Path(runner);
-            // Display initial state of the runner
-            System.out.println("Initial Runner State: " + runner);
-            // Simulate maze traversal
-            System.out.println("\n--- Simulating Maze Traversal ---");
-            path.recordPath();
-            System.out.println("Canonical Path: " + path.showPath());
-            System.out.println("Factorized Path: " + path.factorizedPath(path.showPath()));
+            //If there is a path validation flag,  check for valid path
+            if (flag == 'p') {
+                checkPathWin = path.checkPath(pathSequence);
+                if (checkPathWin == true) {
+                    System.out.println("Valid path!");
+                } else {
+                    System.out.println("Invalid path!");
+                }
 
+            }
+            else {
+                // Simulate maze traversal
+                System.out.println("\n--- Simulating Maze Traversal ---");
+                path.recordPath();
+                System.out.println("Canonical Path: " + path.showPath());
+                System.out.println("Factorized Path: " + path.factorizedPath(path.showPath()));
+            }
 
 
 
@@ -410,7 +430,7 @@ class Person {
 
 class Path {
     private Person person;
-    private StringBuilder factorizedPath;
+    private StringBuilder factorizedPath =  new StringBuilder();
     private StringBuilder path = new StringBuilder();
     private char right;
     private char left;
@@ -540,37 +560,74 @@ class Path {
         return path.toString();
     }
 
+
     /* Public method: checkPath()
     Description: checks given path to see if it is valid
     Returns: Boolean */
     public boolean checkPath(String givenPath) {
         //Traverse the path string
         for (int i = 0; i < givenPath.length(); i++) {
-            //Move through maze according to surroundings and path instructions
-            char[] surroundings = person.getSurroundings();
-            switch(i) {
-                case 'R':
-                    person.turnRight();
-                    break;
-                case 'L':
-                    person.turnLeft();
-                    break;
-                case 'F':
-                    //Exit if there is a wall in front
-                    if (surroundings[0] == '#') {
-                        System.out.println("Error: wall found in path");
-                        System.exit(0);
-                    } //Otherwise move forward
-                    else {
-                        person.moveForward();
-                    }
-                    break;
-            }
+            char currentChar = givenPath.charAt(i);
 
+            //Detect consecutive digits
+            if (Character.isDigit(currentChar)) {
+                StringBuilder numberBuilder = new StringBuilder();
+                while (i < givenPath.length() && Character.isDigit(givenPath.charAt(i))) {
+                    numberBuilder.append(givenPath.charAt(i));
+                    i++;
+                }
+
+                int moveCount = Integer.parseInt(numberBuilder.toString());
+
+                //Apply move multiple times if number precedes a letter
+                if (i < givenPath.length()) {
+                    char moveChar = givenPath.charAt(i);
+                    for (int j = 0; j < moveCount; j++) {
+                        executeMove(moveChar);
+                    }
+                }
+
+                // Skip any spaces after the letter
+                while (i < givenPath.length() && givenPath.charAt(i) == ' ') {
+                    i++;
+                }
+            } else if (currentChar == 'F' || currentChar == 'R' || currentChar == 'L') { ////Process single letters normally if there is no number
+                System.out.println("moving: " + currentChar);
+                executeMove(currentChar);
+            } 
+            
+            
         }
-        //Check if runner exited the maze
+
         return checkWin();
     }
+    /* Private method: executeMove(char move)
+    Description: executes move for checkPath() method
+    Returns: void */
+    private void executeMove(char move) {
+        char[] surroundings = person.getSurroundings();
+    
+        switch (move) {
+            case 'R':
+                person.turnRight();
+                break;
+            case 'L':
+                person.turnLeft();
+                break;
+            case 'F':
+                if (surroundings[0] == '#') {  // Wall in front
+                    System.out.println("Error: wall found in path");
+                    System.exit(0);
+                } else {
+                    person.moveForward();
+                }
+                break;
+            default:
+                System.out.println("Invalid move: " + move);
+                System.exit(0);
+        }
+    }
+    
 
     /* Public method: factorizedPath()
     Parameters: StringBuilder (path given (cound be from -i or -p flag))
@@ -581,7 +638,7 @@ class Path {
         int count = 1;
         //Account for only 1 letter in path
         if (givenPath.length() == 1) {
-            factorizedPath.append(currentLetter + count);
+            factorizedPath.append(currentLetter).append(" ");
             return factorizedPath.toString();
         }
         for (int i = 1; i < givenPath.length(); i++) {
@@ -589,22 +646,21 @@ class Path {
                 count++;
             }
             else { //If there is no match and the index is not the last one
-                factorizedPath.append(currentLetter + count); //append currentLetter and count to factorizedPath string
-                count = 1; //reset count to 0
+                if (count != 1) {
+                    factorizedPath.append(count); //append currentLetter and count to factorizedPath string
+                }
+                
+                factorizedPath.append(currentLetter).append(" ");
+            
                 currentLetter = givenPath.charAt(i); //set currentLetter to current index character
+                count = 1; //reset count to 1
             }
         }
         //Account for last letter
-        //Check if factorized path last move doesn't matches last letter
-        if (factorizedPath.charAt(factorizedPath.length()-2) != currentLetter) {
-            factorizedPath.append(currentLetter + count);
+        if (count != 1) {
+            factorizedPath.append(count); //append currentLetter and count to factorizedPath string
         }
-        else {// if letter matches currentLetter
-            //increment count of last letter at the last index of the factorized path
-            factorizedPath.setCharAt(factorizedPath.length() -1, (char)(count++ + '0')) ;
-            
-        }
-        
+        factorizedPath.append(currentLetter).append(" ");
 
         return factorizedPath.toString();
 
