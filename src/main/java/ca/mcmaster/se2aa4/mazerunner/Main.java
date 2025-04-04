@@ -428,6 +428,41 @@ class Person {
 
 }
 
+interface Command {
+    void execute(Person person);
+}
+
+class MoveForwardCommand implements Command {
+
+    @Override
+    public void execute(Person person) {
+        person.moveForward();
+    }
+    
+    
+}
+
+class TurnLeftCommand implements Command {
+
+    @Override
+    public void execute(Person person) {
+        person.turnLeft();
+    }
+    
+    
+}
+
+class TurnRightCommand implements Command {
+
+    @Override
+    public void execute(Person person) {
+        person.turnRight();
+    }
+    
+    
+}
+
+
 class Path {
     private static final Logger logger = LogManager.getLogger();
     private Person person;
@@ -437,10 +472,16 @@ class Path {
     private char left;
     private char front;
     private char back;
+    private Command moveForwardCommand;
+    private Command turnLeftCommand;
+    private Command turnRightCommand;
 
 
     public Path(Person person) {
         this.person = person;
+        this.moveForwardCommand = new MoveForwardCommand();
+        this.turnLeftCommand = new TurnLeftCommand();
+        this.turnRightCommand = new TurnRightCommand();
         
     }
 
@@ -492,20 +533,20 @@ class Path {
         if (right == '#') { //If it's a wall
             //Turn left if there is also a wall in the front
             if (front == '#') {
-                person.turnLeft(); 
+                turnLeftCommand.execute(person);
                 //Add to path
                 path.append("L");
                 logger.info("Turning Left");
             }
             else { //Move forward if there is no wall in the front
-                person.moveForward();
+                moveForwardCommand.execute(person);
                 //Add to path
                 path.append("F");
                 logger.info("Moving forward");
             }
         } else { //If element on right is not a wall 
             
-            person.turnRight(); //Turn right
+            turnRightCommand.execute(person); //Turn right
             logger.info("Turning Right");
             //Add to path
             path.append("R");
@@ -515,7 +556,7 @@ class Path {
 
             if (front != '#') {
                 //Move forward
-                person.moveForward();
+                moveForwardCommand.execute(person);
                 //Add to path
                 path.append("F");
                 logger.info("Moving forward");
@@ -610,17 +651,17 @@ class Path {
     
         switch (move) {
             case 'R':
-                person.turnRight();
+                turnRightCommand.execute(person);;
                 break;
             case 'L':
-                person.turnLeft();
+                turnLeftCommand.execute(person);
                 break;
             case 'F':
                 if (surroundings[0] == '#') {  // Wall in front
                     logger.error("Error: wall found in path");
                     System.exit(0);
                 } else {
-                    person.moveForward();
+                    moveForwardCommand.execute(person);
                 }
                 break;
             default:
