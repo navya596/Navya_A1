@@ -86,7 +86,8 @@ public class Main {
             }
             //Initialize person and path
             Person runner = new Person(mazeArray, initialFace, entry, entry, exit);
-            Path path = new Path(runner);
+            //Path class commented out as it is not used in this assignment
+            //Path path = new Path(runner);
 
 
             // Initialize the appropriate path solver based on the flag
@@ -436,40 +437,46 @@ class Person {
 
 }
 
+/*Command interface for design pattern
+Method: execute(), takes Person as a parameter*/
 interface Command {
     void execute(Person person);
 }
 
+//Subclass move forward for Command
 class MoveForwardCommand implements Command {
 
     @Override
     public void execute(Person person) {
-        person.moveForward();
+        person.moveForward(); //calls person to execute
     }
     
     
 }
 
+//Subclass turn left for Command
 class TurnLeftCommand implements Command {
 
     @Override
     public void execute(Person person) {
-        person.turnLeft();
+        person.turnLeft(); //calls person to execute
     }
     
     
 }
 
+//Subclass turn right for Command
 class TurnRightCommand implements Command {
 
     @Override
     public void execute(Person person) {
-        person.turnRight();
+        person.turnRight(); //calls person to execute
     }
     
     
 }
 
+//Abstract class for template design pattern
 abstract class AbstractPathSolver {
     protected Person person;
 
@@ -486,10 +493,11 @@ abstract class AbstractPathSolver {
         postProcess();
     }
 
-
-    protected abstract void doStep();
+    //methods overrided in subclasses
+    protected abstract void doStep(); 
     protected abstract void postProcess();
 
+    //concrete method
     protected boolean checkWin() {
         return person.getCurrentPosition()[0] == person.getEnd()[0]
             && person.getCurrentPosition()[1] == person.getEnd()[1];
@@ -497,6 +505,7 @@ abstract class AbstractPathSolver {
     
 }
 
+//Subclass of abstract path solver class
 class GeneratedPath extends AbstractPathSolver {
     private static final Logger logger = LogManager.getLogger();
 
@@ -519,6 +528,9 @@ class GeneratedPath extends AbstractPathSolver {
 
 
     @Override
+    /* Protected method: doStep()
+    Description: Handles make decision Logic
+    Returns: void */
     protected void doStep() {
         //Check for element on front 
         //Check for the element on the right
@@ -563,6 +575,9 @@ class GeneratedPath extends AbstractPathSolver {
     }
 
     @Override
+    /* Protected method: postProcess()
+    Description: Prints canonical and factorized path
+    Returns: void */
     protected void postProcess() {
         System.out.println("Canonical Path: " + showPath());
         System.out.println("Factorized Path: " + factorizedPath(showPath()));
@@ -752,6 +767,9 @@ class ValidatePath extends AbstractPathSolver {
 
 }
 
+//PATH CLASS WAS ORIGINALLY USED IN A1 CODE
+//THIS CLASS IS COMMENTED OUT AS IT IS NOT USED FOR THIS ASSIGNMENT
+/* 
 class Path {
     private static final Logger logger = LogManager.getLogger();
     private Person person;
@@ -776,7 +794,7 @@ class Path {
 
     /* Public method: updateRelativeDirections()
     Description: Updates relative right, left, front, back directions based on current facing 
-    Returns: void */
+    Returns: void */ /* 
     public void updateRelativeDirections() {
         person.checkSurroundings();
         char[] surroundings = person.getSurroundings();
@@ -813,7 +831,7 @@ class Path {
 
     /* Public method: makeDecision()
     Description: Makes a movement decision for the runner based on its surroundings
-    Returns: void */
+    Returns: void */ /* 
     public void makeDecision() {
 
         //Check for element on front 
@@ -861,7 +879,7 @@ class Path {
 
     /* Public method: checkWin()
     Description:Checks for win after each decision
-    Returns: void */
+    Returns: void */ /* 
     public boolean checkWin() {
         if (person.getCurrentPosition()[0] == person.getEnd()[0] && person.getCurrentPosition()[1] == person.getEnd()[1]) {
             logger.info("YAY you won!!");
@@ -874,7 +892,7 @@ class Path {
 
     /* Public method: recordPath()
     Description:Loops decisions to record path for given maze until end point is reached
-    Returns: void */
+    Returns: void */ /* 
     public void recordPath() {
         while(!checkWin()) {
             makeDecision();
@@ -886,7 +904,7 @@ class Path {
 
     /* Public method: showPath()
     Description: generates canonical path of string
-    Returns: String */
+    Returns: String */ /* 
     public String showPath() {
         return path.toString();
     }
@@ -894,7 +912,7 @@ class Path {
 
     /* Public method: checkPath()
     Description: checks given path to see if it is valid
-    Returns: Boolean */
+    Returns: Boolean */ /* 
     public boolean checkPath(String givenPath) {
         //Traverse the path string
         for (int i = 0; i < givenPath.length(); i++) {
@@ -934,7 +952,7 @@ class Path {
     }
     /* Private method: executeMove(char move)
     Description: executes move for checkPath() method
-    Returns: void */
+    Returns: void */ /* 
     private void executeMove(char move) {
         char[] surroundings = person.getSurroundings();
     
@@ -963,7 +981,7 @@ class Path {
     /* Public method: factorizedPath()
     Parameters: StringBuilder (path given (cound be from -i or -p flag))
     Description: generates factorized expresson for path
-    Returns: void */
+    Returns: void */ /* 
     public String factorizedPath(String givenPath) {
         char currentLetter = givenPath.charAt(0); //first index of path string
         int count = 1;
@@ -998,4 +1016,4 @@ class Path {
     }
 
 
-}
+} */

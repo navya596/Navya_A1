@@ -36,8 +36,7 @@ public class MainTest {
         String[] args = {"-i", "./examples/small.maz.txt"};
 
         //Capture output
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
-        System.setOut(new PrintStream(output));
+        ByteArrayOutputStream output = new ByteArrayOutputStream();        System.setOut(new PrintStream(output));
 
         //Run program
         Main.main(args);
