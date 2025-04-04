@@ -87,9 +87,17 @@ public class Main {
             //Initialize person and path
             Person runner = new Person(mazeArray, initialFace, entry, entry, exit);
             Path path = new Path(runner);
+
+
+            // Initialize the appropriate path solver based on the flag
+            AbstractPathSolver pathSolver;
+
+
             //If there is a path validation flag,  check for valid path
             if (flag == 'p') {
-                checkPathWin = path.checkPath(pathSequence);
+                pathSolver = new ValidatePath(runner);
+                
+                checkPathWin = ((ValidatePath) pathSolver).checkPath(pathSequence);
                 if (checkPathWin == true) {
                     System.out.println("Valid path!");
                 } else {
@@ -100,9 +108,9 @@ public class Main {
             else {
                 // Simulate maze traversal
                 logger.info("\n--- Simulating Maze Traversal ---");
-                path.recordPath();
-                System.out.println("Canonical Path: " + path.showPath());
-                System.out.println("Factorized Path: " + path.factorizedPath(path.showPath()));
+                pathSolver = new GeneratedPath(runner);
+                pathSolver.solvePath();
+                
             }
 
 
@@ -462,6 +470,287 @@ class TurnRightCommand implements Command {
     
 }
 
+abstract class AbstractPathSolver {
+    protected Person person;
+
+    public AbstractPathSolver (Person person) {
+        this.person = person;
+    }
+
+    //Template method
+    public final void solvePath() {
+        while (!checkWin()) {
+            doStep();
+
+        }
+        postProcess();
+    }
+
+
+    protected abstract void doStep();
+    protected abstract void postProcess();
+
+    protected boolean checkWin() {
+        return person.getCurrentPosition()[0] == person.getEnd()[0]
+            && person.getCurrentPosition()[1] == person.getEnd()[1];
+    }
+    
+}
+
+class GeneratedPath extends AbstractPathSolver {
+    private static final Logger logger = LogManager.getLogger();
+
+    private StringBuilder path = new StringBuilder();
+    private StringBuilder factorizedPath =  new StringBuilder();
+    private Command moveForwardCommand = new MoveForwardCommand();
+    private Command turnLeftCommand = new TurnLeftCommand();
+    private Command turnRightCommand = new TurnRightCommand();
+
+    private char right;
+    private char left;
+    private char front;
+    private char back;
+
+    public GeneratedPath(Person person) {
+        super(person);
+
+        
+    }
+
+
+    @Override
+    protected void doStep() {
+        //Check for element on front 
+        //Check for the element on the right
+        updateRelativeDirections();
+        if (right == '#') { //If it's a wall
+            //Turn left if there is also a wall in the front
+            if (front == '#') {
+                turnLeftCommand.execute(person);
+                //Add to path
+                path.append("L");
+                logger.info("Turning Left");
+            }
+            else { //Move forward if there is no wall in the front
+                moveForwardCommand.execute(person);
+                //Add to path
+                path.append("F");
+                logger.info("Moving forward");
+            }
+        } else { //If element on right is not a wall 
+            
+            turnRightCommand.execute(person); //Turn right
+            logger.info("Turning Right");
+            //Add to path
+            path.append("R");
+            logger.info("Current Position: " + Arrays.toString(person.getCurrentPosition()));
+            logger.info("Current Face: " + person.getCurrentFace());
+            updateRelativeDirections();
+
+            if (front != '#') {
+                //Move forward
+                moveForwardCommand.execute(person);
+                //Add to path
+                path.append("F");
+                logger.info("Moving forward");
+                logger.info("Current Position: " + Arrays.toString(person.getCurrentPosition()));
+                logger.info("Current Face: " + person.getCurrentFace());
+            }
+            
+        }
+
+
+    }
+
+    @Override
+    protected void postProcess() {
+        System.out.println("Canonical Path: " + showPath());
+        System.out.println("Factorized Path: " + factorizedPath(showPath()));
+    }
+
+    /* Public method: updateRelativeDirections()
+    Description: Updates relative right, left, front, back directions based on current facing 
+    Returns: void */
+    public void updateRelativeDirections() {
+        person.checkSurroundings();
+        char[] surroundings = person.getSurroundings();
+        char[][] maze = person.getMaze();
+
+        //use switch case to identify what direction is right, left, front, back based on the respective facing side
+        switch(person.getCurrentFace()) {
+            case 'E':
+                right = surroundings[3]; //element on its south side
+                left = surroundings[2]; //element on its north side
+                front = surroundings[0]; //element on its east side
+                back = surroundings[1]; //element on its west side
+                break;
+            case 'W':
+                right = surroundings[2];
+                left = surroundings[3];
+                front = surroundings[1];
+                back = surroundings[0];
+                break;
+            case 'N':
+                right = surroundings[0];
+                left = surroundings[1];
+                front = surroundings[2];
+                back = surroundings[3];
+                break;
+            case 'S':
+                right = surroundings[1];
+                left = surroundings[0];
+                front = surroundings[3];
+                back = surroundings[2];
+                break;
+        }
+    }
+
+    /* Public method: recordPath()
+    Description:Loops decisions to record path for given maze until end point is reached
+    Returns: void */
+    public void recordPath() {
+        while(!checkWin()) {
+            doStep();
+            logger.info("Current Position: " + Arrays.toString(person.getCurrentPosition()));
+            logger.info("Current Face: " + person.getCurrentFace());
+        }
+        logger.info("Done recording path!");
+    }
+
+    /* Public method: showPath()
+    Description: generates canonical path of string
+    Returns: String */
+    public String showPath() {
+        return path.toString();
+    }
+
+    /* Public method: factorizedPath()
+    Parameters: StringBuilder (path given (cound be from -i or -p flag))
+    Description: generates factorized expresson for path
+    Returns: void */
+    public String factorizedPath(String givenPath) {
+        char currentLetter = givenPath.charAt(0); //first index of path string
+        int count = 1;
+        //Account for only 1 letter in path
+        if (givenPath.length() == 1) {
+            factorizedPath.append(currentLetter).append(" ");
+            return factorizedPath.toString();
+        }
+        for (int i = 1; i < givenPath.length(); i++) {
+            if (givenPath.charAt(i) == currentLetter) { //increase count if a consecutive index matches currentLetter
+                count++;
+            }
+            else { //If there is no match and the index is not the last one
+                if (count != 1) {
+                    factorizedPath.append(count); //append currentLetter and count to factorizedPath string
+                }
+                
+                factorizedPath.append(currentLetter).append(" ");
+            
+                currentLetter = givenPath.charAt(i); //set currentLetter to current index character
+                count = 1; //reset count to 1
+            }
+        }
+        //Account for last letter
+        if (count != 1) {
+            factorizedPath.append(count); //append currentLetter and count to factorizedPath string
+        }
+        factorizedPath.append(currentLetter).append(" ");
+
+        return factorizedPath.toString();
+
+    }
+
+}
+
+class ValidatePath extends AbstractPathSolver {
+    private static final Logger logger = LogManager.getLogger();
+    
+    private Command moveForwardCommand = new MoveForwardCommand();
+    private Command turnLeftCommand = new TurnLeftCommand();
+    private Command turnRightCommand = new TurnRightCommand();
+
+    public ValidatePath(Person person) {
+        super(person);
+
+
+    }
+
+    @Override
+    public void doStep() {}
+
+    @Override
+    public void postProcess() {}
+
+
+    /* Public method: checkPath()
+    Description: checks given path to see if it is valid
+    Returns: Boolean */
+    public boolean checkPath(String givenPath) {
+        //Traverse the path string
+        for (int i = 0; i < givenPath.length(); i++) {
+            char currentChar = givenPath.charAt(i);
+
+            //Detect consecutive digits
+            if (Character.isDigit(currentChar)) {
+                StringBuilder numberBuilder = new StringBuilder();
+                while (i < givenPath.length() && Character.isDigit(givenPath.charAt(i))) {
+                    numberBuilder.append(givenPath.charAt(i));
+                    i++;
+                }
+
+                int moveCount = Integer.parseInt(numberBuilder.toString());
+
+                //Apply move multiple times if number precedes a letter
+                if (i < givenPath.length()) {
+                    char moveChar = givenPath.charAt(i);
+                    for (int j = 0; j < moveCount; j++) {
+                        executeMove(moveChar);
+                    }
+                }
+
+                // Skip any spaces after the letter
+                while (i < givenPath.length() && givenPath.charAt(i) == ' ') {
+                    i++;
+                }
+            } else if (currentChar == 'F' || currentChar == 'R' || currentChar == 'L') { ////Process single letters normally if there is no number
+                logger.info("moving: " + currentChar);
+                executeMove(currentChar);
+            } 
+            
+            
+        }
+
+        return checkWin();
+    }
+    /* Private method: executeMove(char move)
+    Description: executes move for checkPath() method
+    Returns: void */
+    private void executeMove(char move) {
+        char[] surroundings = person.getSurroundings();
+    
+        switch (move) {
+            case 'R':
+                turnRightCommand.execute(person);;
+                break;
+            case 'L':
+                turnLeftCommand.execute(person);
+                break;
+            case 'F':
+                if (surroundings[0] == '#') {  // Wall in front
+                    logger.error("Error: wall found in path");
+                    System.exit(0);
+                } else {
+                    moveForwardCommand.execute(person);
+                }
+                break;
+            default:
+                logger.error("Invalid move: " + move);
+                System.exit(0);
+        }
+    }
+
+}
 
 class Path {
     private static final Logger logger = LogManager.getLogger();
@@ -651,7 +940,7 @@ class Path {
     
         switch (move) {
             case 'R':
-                turnRightCommand.execute(person);;
+                turnRightCommand.execute(person);
                 break;
             case 'L':
                 turnLeftCommand.execute(person);
